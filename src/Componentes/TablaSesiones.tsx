@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getSesion } from '../services/sesiones';
+import { createSesion, getSesion } from '../services/sesiones';
 import { Sesion } from '../models/sesiones';
-import { Table } from "antd";
+import { Button, Drawer, Form, DatePicker, Table } from "antd";
+import moment from 'moment';
+import DrawerFooter from './DrawerFooter';
 
 const TablaSesiones: React.FC = () => {
   const [sesion, setSesion] = useState<Sesion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [horaSesion, setHoraSesion] = useState<string>('');
 
   const columns = [
     {
@@ -13,54 +17,18 @@ const TablaSesiones: React.FC = () => {
       key: 'id_sesion',
     },
     {
-        title: 'fecha_sesion',
-        dataIndex: 'fecha_sesion',
-        key: 'fecha_sesion',
-    },
-    {
         title: 'hora_sesion',
         dataIndex: 'hora_sesion',
         key: 'hora_sesion',
     },
-    {
-        title: 'fk_cliente',
-        dataIndex: 'fk_cliente',
-        key: 'fk_cliente',
-    },
-    {
-        title: 'fecha_venta',
-        dataIndex: 'fecha_venta',
-        key: 'fecha_venta',
-    },
-    {
-        title: 'fecha_creacion',
-        dataIndex: 'fecha_creacion',
-        key: 'fecha_creacion',
-    },
-    {
-        title: 'fecha_actualizacion',
-        dataIndex: 'fecha_actualizacion',
-        key: 'fecha_actualizacion',
-    },
-    {
-        title: 'fk_creado_por',
-        dataIndex: 'fk_creado_por',
-        key: 'fk_creado_por',
-    },
-    {
-        title: 'fk_actualizado_por',
-        dataIndex: 'fk_actualizado_por',
-        key: 'fk_actualizado_por',
-    },
-    
-    
   ];
+
 
   useEffect(() => {
     const fetchSesion = async () => {
       try {
-        const sesion = await getSesion();
-        setSesion(sesion);
+        const data = await getSesion();
+        setSesion(data);
       } catch (error) {
         console.error("Error fetching sesion:", error);
       }
@@ -69,8 +37,47 @@ const TablaSesiones: React.FC = () => {
     fetchSesion();
   }, []);
 
+  const showDrawer = () => {
+    setOpen(true);
+  };
+
+  const onClose = () => {
+    setOpen(false);
+  };
+
+  const onChange = (time: string) => {
+    const formattedTime = moment(new Date(time)).format('HH:mm:ss');
+    setHoraSesion(formattedTime);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await createSesion({
+        hora_sesion: horaSesion }); // Llama a createUsuario con los datos del formulario
+      // Luego puedes volver a cargar la lista de usuarios para actualizar la tabla
+      const updateSesion = await getSesion();
+      setSesion(updateSesion);
+      onClose(); // Cierra el Drawer después de crear el usuario
+    } catch (error) {
+      console.error("Error creating usuario:", error);
+    }
+  };
+
+
   return (
-    <Table dataSource={sesion} columns={columns} />
+    <>
+      <Button type="primary" onClick={showDrawer}>
+        Open
+      </Button>
+      <Table dataSource={sesion} columns={columns} />
+      <Drawer title="Agregar hora_sesion " onClose={onClose} visible={open} footer={<DrawerFooter createRecord={handleSubmit}/>}>
+        <Form>
+          <Form.Item label="Hora" name="hora_sesion"> 
+          <DatePicker picker={'time'} onChange={onChange} />
+          </Form.Item>
+        </Form>
+      </Drawer>
+    </>
   );
 }
 
